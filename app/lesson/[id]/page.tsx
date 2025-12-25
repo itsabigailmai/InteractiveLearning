@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { getUser } from '@/lib/storage';
 import { getLessonById } from '@/lib/lessons';
-import { getGeneratedScript, hasGeneratedScript } from '@/lib/generated-scripts';
+import { getGeneratedScript, hasGeneratedScript, removeAudioTags } from '@/lib/generated-scripts';
 
 export default function LessonPage() {
   const params = useParams();
@@ -161,17 +161,11 @@ export default function LessonPage() {
                       {/* Script Text */}
                       <div className="bg-gray-50 rounded-xl p-4 border-2 border-gray-100">
                         <p className="text-gray-700 leading-relaxed text-lg">
-                          {scene.script}
+                          {removeAudioTags(scene.script)}
                         </p>
                       </div>
 
-                      {/* Audio Tags Info */}
-                      {scene.script.includes('[') && (
-                        <div className="mt-3 flex items-center gap-2 text-sm text-gray-500">
-                          <Sparkles size={16} />
-                          <span>This scene includes special voice directions in [brackets]</span>
-                        </div>
-                      )}
+                      {/* Audio Tags Info - removed since we're hiding tags */}
                     </div>
                   </div>
                 </Card>
