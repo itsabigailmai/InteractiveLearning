@@ -35,6 +35,7 @@ export default function RecordPage() {
   const chunksRef = useRef<Blob[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const countdownRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const user = getUser();
@@ -52,6 +53,7 @@ export default function RecordPage() {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
       if (timerRef.current) clearInterval(timerRef.current);
+      if (countdownRef.current) clearInterval(countdownRef.current);
     };
   }, [router, lesson, script]);
 
@@ -73,6 +75,16 @@ export default function RecordPage() {
   };
 
   const startCountdown = () => {
+    // Clear any existing countdown or timer
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current);
+      countdownRef.current = null;
+    }
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+
     setPhase('countdown');
     setCountdown(3);
     setRecordingTime(0); // Reset timer before countdown
@@ -81,16 +93,24 @@ export default function RecordPage() {
       setCountdown(prev => {
         if (prev <= 1) {
           clearInterval(countInterval);
+          countdownRef.current = null;
           setTimeout(() => startRecording(), 100);
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
+    countdownRef.current = countInterval;
   };
 
   const startRecording = () => {
     if (!streamRef.current) return;
+
+    // Clear any existing timer first!
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
 
     // Ensure video is showing webcam feed and playing
     if (videoRef.current && videoRef.current.srcObject !== streamRef.current) {
