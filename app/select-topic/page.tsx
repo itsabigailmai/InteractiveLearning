@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { BookText, Clock, Scroll, Compass, Microscope, ArrowLeft } from 'lucide-react';
@@ -23,7 +23,7 @@ const categoryColors: Record<string, string> = {
   Science: 'from-blue-400 to-indigo-500',
 };
 
-export default function SelectTopicPage() {
+function SelectTopicContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const grade = searchParams.get('grade') as 'K-5' | '6-8' | '9-12' | null;
@@ -242,6 +242,21 @@ export default function SelectTopicPage() {
         🎪
       </motion.div>
     </div>
+  );
+}
+
+export default function SelectTopicPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4 animate-bounce">🎭</div>
+          <p className="text-2xl font-bold text-purple-600">Loading stories...</p>
+        </div>
+      </div>
+    }>
+      <SelectTopicContent />
+    </Suspense>
   );
 }
 

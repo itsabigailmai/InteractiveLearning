@@ -1,7 +1,10 @@
 import { ButtonHTMLAttributes, forwardRef } from 'react';
 import { motion, HTMLMotionProps } from 'framer-motion';
 
-interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onDrag' | 'onDragStart' | 'onDragEnd'> {
+// Exclude props that conflict between HTML and Framer Motion
+type ConflictingProps = 'onDrag' | 'onDragStart' | 'onDragEnd' | 'onAnimationStart' | 'onAnimationEnd' | 'transition';
+
+interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, ConflictingProps> {
   variant?: 'primary' | 'secondary' | 'accent' | 'success' | 'danger';
   size?: 'sm' | 'md' | 'lg' | 'xl';
   playful?: boolean;
