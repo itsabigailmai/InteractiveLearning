@@ -91,9 +91,10 @@ export default function RecordPage() {
   const startRecording = () => {
     if (!streamRef.current) return;
 
-    // Ensure video is showing webcam feed
-    if (videoRef.current) {
+    // Ensure video is showing webcam feed and playing
+    if (videoRef.current && videoRef.current.srcObject !== streamRef.current) {
       videoRef.current.srcObject = streamRef.current;
+      videoRef.current.play().catch(err => console.log('Play error:', err));
     }
 
     setPhase('recording');
@@ -153,21 +154,48 @@ export default function RecordPage() {
   };
 
   const handleRetake = () => {
+    // Clean up any running timers
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    
+    // Clean up audio
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    
+    // Clean up recorded video
     if (recordedUrl) {
       URL.revokeObjectURL(recordedUrl);
     }
     setRecordedBlob(null);
     setRecordedUrl(null);
-    setPhase('setup');
     setRecordingTime(0);
     
-    // Restore webcam feed
+    // Restore webcam feed immediately
     if (videoRef.current && streamRef.current) {
       videoRef.current.srcObject = streamRef.current;
+      videoRef.current.play().catch(err => console.log('Play error:', err));
     }
+    
+    setPhase('setup');
   };
 
   const handleKeep = () => {
+    // Clean up timers
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    
+    // Clean up audio
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    
     // TODO: Save to localStorage
     if (currentScene < (script?.scenes.length || 5)) {
       // Move to next scene
@@ -179,13 +207,14 @@ export default function RecordPage() {
       }
       setRecordedBlob(null);
       setRecordedUrl(null);
-      setPhase('setup');
       setRecordingTime(0);
       
       // Restore webcam feed
       if (videoRef.current && streamRef.current) {
         videoRef.current.srcObject = streamRef.current;
       }
+      
+      setPhase('setup');
     } else {
       // All scenes done, go to compilation
       router.push(`/lesson/${lessonId}/results`);
@@ -247,7 +276,6 @@ export default function RecordPage() {
                   muted
                   playsInline
                   className="w-full h-full object-cover mirror"
-                  key={phase} // Force remount when phase changes
                 />
               )}
 
