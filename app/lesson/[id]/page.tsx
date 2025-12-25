@@ -44,7 +44,7 @@ export default function LessonPage() {
   };
 
   const handleStartRecording = () => {
-    router.push(`/lesson/${lessonId}/record`);
+    router.push(`/lesson/${lessonId}/record/1`);
   };
 
   const toggleAudio = (sceneNumber: number) => {

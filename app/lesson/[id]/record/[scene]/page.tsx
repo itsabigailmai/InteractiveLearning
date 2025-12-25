@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Video, VideoOff, Play, RotateCcw, Check, ArrowRight, Volume2 } from 'lucide-react';
+import { Video, VideoOff, RotateCcw, Check, ArrowRight, Volume2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { CustomAudioPlayer } from '@/components/ui/CustomAudioPlayer';
@@ -14,14 +14,14 @@ import { getGeneratedScript, getAudioPath, removeAudioTags } from '@/lib/generat
 
 type RecordingPhase = 'setup' | 'countdown' | 'recording' | 'review';
 
-export default function RecordPage() {
+export default function RecordScenePage() {
   const params = useParams();
   const router = useRouter();
   const lessonId = params.id as string;
+  const sceneNumber = parseInt(params.scene as string);
 
   const [lesson] = useState(getLessonById(lessonId));
   const [script] = useState(getGeneratedScript(lessonId));
-  const [currentScene, setCurrentScene] = useState(1);
   const [phase, setPhase] = useState<RecordingPhase>('setup');
   const [countdown, setCountdown] = useState(3);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -44,6 +44,12 @@ export default function RecordPage() {
       return;
     }
 
+    // Validate scene number
+    if (isNaN(sceneNumber) || sceneNumber < 1 || sceneNumber > script.scenes.length) {
+      router.push(`/lesson/${lessonId}`);
+      return;
+    }
+
     // Request webcam permission on mount
     requestWebcam();
 
@@ -55,7 +61,7 @@ export default function RecordPage() {
       if (timerRef.current) clearInterval(timerRef.current);
       if (countdownRef.current) clearInterval(countdownRef.current);
     };
-  }, [router, lesson, script]);
+  }, [router, lesson, script, lessonId, sceneNumber]);
 
   const requestWebcam = async () => {
     try {
@@ -87,7 +93,7 @@ export default function RecordPage() {
 
     setPhase('countdown');
     setCountdown(3);
-    setRecordingTime(0); // Reset timer before countdown
+    setRecordingTime(0);
 
     const countInterval = setInterval(() => {
       setCountdown(prev => {
@@ -119,7 +125,7 @@ export default function RecordPage() {
     }
 
     setPhase('recording');
-    setRecordingTime(0); // Reset timer
+    setRecordingTime(0);
     chunksRef.current = [];
 
     // Start recording
@@ -150,12 +156,12 @@ export default function RecordPage() {
       audioRef.current.play();
     }
 
-    // Start timer (count every second using Date.now() to avoid drift)
+    // Start timer
     const startTime = Date.now();
     timerRef.current = setInterval(() => {
       const elapsed = Math.floor((Date.now() - startTime) / 1000);
       setRecordingTime(elapsed);
-    }, 100); // Update frequently but calculate actual elapsed time
+    }, 100);
   };
 
   const stopRecording = () => {
@@ -170,12 +176,10 @@ export default function RecordPage() {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
-    
-    // Don't clear srcObject here - let the review phase handle it
   };
 
   const handleRetake = () => {
-    // Clean up any running timers
+    // Clean up timers
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -195,7 +199,7 @@ export default function RecordPage() {
     setRecordedUrl(null);
     setRecordingTime(0);
     
-    // Restore webcam feed immediately
+    // Restore webcam feed
     if (videoRef.current && streamRef.current) {
       videoRef.current.srcObject = streamRef.current;
       videoRef.current.play().catch(err => console.log('Play error:', err));
@@ -205,39 +209,12 @@ export default function RecordPage() {
   };
 
   const handleKeep = () => {
-    // Clean up timers
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
+    // TODO: Save recording to localStorage
     
-    // Clean up audio
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-    }
-    
-    // TODO: Save to localStorage
-    if (currentScene < (script?.scenes.length || 5)) {
-      // Move to next scene
-      setCurrentScene(prev => prev + 1);
-      
-      // Clean up current recording
-      if (recordedUrl) {
-        URL.revokeObjectURL(recordedUrl);
-      }
-      setRecordedBlob(null);
-      setRecordedUrl(null);
-      setRecordingTime(0);
-      
-      // Restore webcam feed
-      if (videoRef.current && streamRef.current) {
-        videoRef.current.srcObject = streamRef.current;
-      }
-      
-      setPhase('setup');
+    // Navigate to next scene or results
+    if (script && sceneNumber < script.scenes.length) {
+      router.push(`/lesson/${lessonId}/record/${sceneNumber + 1}`);
     } else {
-      // All scenes done, go to compilation
       router.push(`/lesson/${lessonId}/results`);
     }
   };
@@ -246,7 +223,7 @@ export default function RecordPage() {
     return null;
   }
 
-  const currentSceneData = script.scenes[currentScene - 1];
+  const currentSceneData = script.scenes[sceneNumber - 1];
   const totalScenes = script.scenes.length;
 
   return (
@@ -259,7 +236,7 @@ export default function RecordPage() {
               {lesson.title}
             </h1>
             <p className="text-lg text-gray-600 font-semibold mt-1">
-              Scene {currentScene} of {totalScenes}: {currentSceneData.title}
+              Scene {sceneNumber} of {totalScenes}: {currentSceneData.title}
             </p>
           </div>
           <div className="px-6 py-3 bg-purple-500 text-white rounded-full font-bold text-lg">
@@ -271,7 +248,7 @@ export default function RecordPage() {
         <div className="mt-4 bg-gray-200 rounded-full h-3 overflow-hidden">
           <div 
             className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-500"
-            style={{ width: `${(currentScene / totalScenes) * 100}%` }}
+            style={{ width: `${(sceneNumber / totalScenes) * 100}%` }}
           />
         </div>
       </div>
@@ -282,7 +259,7 @@ export default function RecordPage() {
           {phase === 'review' && recordedUrl ? (
             <CustomVideoPlayer
               videoSrc={recordedUrl}
-              audioSrc={getAudioPath(lessonId, currentScene)}
+              audioSrc={getAudioPath(lessonId, sceneNumber)}
               autoPlay
             />
           ) : (
@@ -391,7 +368,7 @@ export default function RecordPage() {
                 className="font-bold cursor-pointer"
               >
                 <Check className="mr-2" size={20} />
-                Keep This Take
+                {sceneNumber < totalScenes ? 'Next Scene' : 'Finish'}
                 <ArrowRight className="ml-2" size={20} />
               </Button>
             </div>
@@ -407,7 +384,7 @@ export default function RecordPage() {
                 <Volume2 size={28} />
                 🎧 Listen First
               </h3>
-              <CustomAudioPlayer src={getAudioPath(lessonId, currentScene)} />
+              <CustomAudioPlayer src={getAudioPath(lessonId, sceneNumber)} />
               <p className="text-sm mt-4 text-white/90">
                 Practice listening to the narration before you start recording. The audio will play automatically during recording!
               </p>
@@ -440,7 +417,7 @@ export default function RecordPage() {
             {/* Hidden audio element for recording */}
             <audio
               ref={audioRef}
-              src={getAudioPath(lessonId, currentScene)}
+              src={getAudioPath(lessonId, sceneNumber)}
               preload="auto"
               onEnded={() => {
                 // Auto-stop recording when audio finishes
