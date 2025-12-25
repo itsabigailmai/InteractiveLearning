@@ -7,6 +7,7 @@ import { Video, VideoOff, Play, RotateCcw, Check, ArrowRight, Volume2 } from 'lu
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { CustomAudioPlayer } from '@/components/ui/CustomAudioPlayer';
+import { CustomVideoPlayer } from '@/components/ui/CustomVideoPlayer';
 import { getUser } from '@/lib/storage';
 import { getLessonById } from '@/lib/lessons';
 import { getGeneratedScript, getAudioPath, removeAudioTags } from '@/lib/generated-scripts';
@@ -258,18 +259,16 @@ export default function RecordPage() {
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left: Video/Camera */}
         <div>
-          <Card className="overflow-hidden relative">
-            {/* Video Display */}
-            <div className="relative bg-black aspect-video">
-              {phase === 'review' && recordedUrl ? (
-                <video
-                  key={recordedUrl}
-                  src={recordedUrl}
-                  controls
-                  autoPlay
-                  className="w-full h-full object-contain"
-                />
-              ) : (
+          {phase === 'review' && recordedUrl ? (
+            <CustomVideoPlayer
+              videoSrc={recordedUrl}
+              audioSrc={getAudioPath(lessonId, currentScene)}
+              autoPlay
+            />
+          ) : (
+            <Card className="overflow-hidden relative">
+              {/* Video Display */}
+              <div className="relative bg-black aspect-video">
                 <video
                   ref={videoRef}
                   autoPlay
@@ -277,103 +276,106 @@ export default function RecordPage() {
                   playsInline
                   className="w-full h-full object-cover mirror"
                 />
-              )}
 
-              {/* Countdown Overlay */}
-              <AnimatePresence>
-                {phase === 'countdown' && countdown > 0 && (
-                  <motion.div
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0, opacity: 0 }}
-                    className="absolute inset-0 flex items-center justify-center bg-black/50"
-                  >
+                {/* Countdown Overlay */}
+                <AnimatePresence>
+                  {phase === 'countdown' && countdown > 0 && (
                     <motion.div
-                      key={countdown}
-                      initial={{ scale: 0.5, opacity: 0 }}
+                      initial={{ scale: 0, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
-                      className="text-white text-9xl font-bold"
+                      exit={{ scale: 0, opacity: 0 }}
+                      className="absolute inset-0 flex items-center justify-center bg-black/50"
                     >
-                      {countdown}
+                      <motion.div
+                        key={countdown}
+                        initial={{ scale: 0.5, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="text-white text-9xl font-bold"
+                      >
+                        {countdown}
+                      </motion.div>
                     </motion.div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                  )}
+                </AnimatePresence>
 
-              {/* Recording Indicator */}
-              {phase === 'recording' && (
-                <div className="absolute top-4 left-4 flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-full font-bold">
-                  <motion.div
-                    animate={{ opacity: [1, 0, 1] }}
-                    transition={{ duration: 1, repeat: Infinity }}
-                    className="w-3 h-3 bg-white rounded-full"
-                  />
-                  REC {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
-                </div>
-              )}
-
-              {/* Camera Permission */}
-              {!hasPermission && (
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
-                  <div className="text-center text-white">
-                    <VideoOff size={64} className="mx-auto mb-4" />
-                    <p className="text-xl font-semibold">Requesting camera access...</p>
+                {/* Recording Indicator */}
+                {phase === 'recording' && (
+                  <div className="absolute top-4 left-4 flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-full font-bold">
+                    <motion.div
+                      animate={{ opacity: [1, 0, 1] }}
+                      transition={{ duration: 1, repeat: Infinity }}
+                      className="w-3 h-3 bg-white rounded-full"
+                    />
+                    REC {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
                   </div>
-                </div>
-              )}
-            </div>
-          </Card>
+                )}
+
+                {/* Camera Permission */}
+                {!hasPermission && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                    <div className="text-center text-white">
+                      <VideoOff size={64} className="mx-auto mb-4" />
+                      <p className="text-xl font-semibold">Requesting camera access...</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
 
           {/* Controls */}
-          <div className="mt-6 flex justify-center gap-4">
-            {phase === 'setup' && (
-              <Button
-                onClick={startCountdown}
-                variant="primary"
-                size="xl"
-                disabled={!hasPermission}
-                className="font-bold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 cursor-pointer"
-              >
-                <Video className="mr-2" size={24} />
-                Ready to Record!
-              </Button>
-            )}
+          {phase !== 'review' && (
+            <div className="mt-6 flex justify-center gap-4">
+              {phase === 'setup' && (
+                <Button
+                  onClick={startCountdown}
+                  variant="primary"
+                  size="xl"
+                  disabled={!hasPermission}
+                  className="font-bold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 cursor-pointer"
+                >
+                  <Video className="mr-2" size={24} />
+                  Ready to Record!
+                </Button>
+              )}
 
-            {phase === 'recording' && (
+              {phase === 'recording' && (
+                <Button
+                  onClick={stopRecording}
+                  variant="danger"
+                  size="xl"
+                  className="font-bold cursor-pointer"
+                >
+                  Stop Recording
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Review Controls */}
+          {phase === 'review' && (
+            <div className="mt-6 flex justify-center gap-4">
               <Button
-                onClick={stopRecording}
-                variant="danger"
-                size="xl"
+                onClick={handleRetake}
+                variant="secondary"
+                size="lg"
                 className="font-bold cursor-pointer"
               >
-                Stop Recording
+                <RotateCcw className="mr-2" size={20} />
+                Try Again
               </Button>
-            )}
-
-            {phase === 'review' && (
-              <div className="flex gap-4">
-                <Button
-                  onClick={handleRetake}
-                  variant="secondary"
-                  size="lg"
-                  className="font-bold cursor-pointer"
-                >
-                  <RotateCcw className="mr-2" size={20} />
-                  Try Again
-                </Button>
-                <Button
-                  onClick={handleKeep}
-                  variant="success"
-                  size="lg"
-                  className="font-bold cursor-pointer"
-                >
-                  <Check className="mr-2" size={20} />
-                  Keep This Take
-                  <ArrowRight className="ml-2" size={20} />
-                </Button>
-              </div>
-            )}
-          </div>
+              <Button
+                onClick={handleKeep}
+                variant="success"
+                size="lg"
+                className="font-bold cursor-pointer"
+              >
+                <Check className="mr-2" size={20} />
+                Keep This Take
+                <ArrowRight className="ml-2" size={20} />
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Right: Script & Instructions */}
@@ -420,6 +422,12 @@ export default function RecordPage() {
               ref={audioRef}
               src={getAudioPath(lessonId, currentScene)}
               preload="auto"
+              onEnded={() => {
+                // Auto-stop recording when audio finishes
+                if (phase === 'recording') {
+                  stopRecording();
+                }
+              }}
             />
           </Card>
 
@@ -429,6 +437,10 @@ export default function RecordPage() {
               💡 Acting Tips
             </h3>
             <ul className="space-y-2 text-gray-700">
+              <li className="flex items-start gap-2">
+                <span className="text-yellow-600 font-bold">✓</span>
+                <span>Recording stops automatically when the narration ends</span>
+              </li>
               <li className="flex items-start gap-2">
                 <span className="text-yellow-600 font-bold">✓</span>
                 <span>Listen to the narration and act along with it</span>
