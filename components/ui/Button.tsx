@@ -1,7 +1,7 @@
 import { ButtonHTMLAttributes, forwardRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, HTMLMotionProps } from 'framer-motion';
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onDrag' | 'onDragStart' | 'onDragEnd'> {
   variant?: 'primary' | 'secondary' | 'accent' | 'success' | 'danger';
   size?: 'sm' | 'md' | 'lg' | 'xl';
   playful?: boolean;
@@ -26,23 +26,33 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       xl: 'px-10 py-5 text-xl',
     };
     
-    const ButtonComponent = playful ? motion.button : 'button';
-    const motionProps = playful ? {
-      whileHover: { scale: disabled ? 1 : 1.02 },
-      whileTap: { scale: disabled ? 1 : 0.98 },
-      transition: { duration: 0.15 }
-    } : {};
+    const classNames = `${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`;
+    
+    if (playful) {
+      return (
+        <motion.button
+          ref={ref}
+          className={classNames}
+          disabled={disabled}
+          whileHover={{ scale: disabled ? 1 : 1.02 }}
+          whileTap={{ scale: disabled ? 1 : 0.98 }}
+          transition={{ duration: 0.15 }}
+          {...props}
+        >
+          {children}
+        </motion.button>
+      );
+    }
     
     return (
-      <ButtonComponent
+      <button
         ref={ref}
-        className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
+        className={classNames}
         disabled={disabled}
-        {...motionProps}
         {...props}
       >
         {children}
-      </ButtonComponent>
+      </button>
     );
   }
 );
