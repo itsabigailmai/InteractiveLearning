@@ -44,8 +44,7 @@ export default function LessonPage() {
   };
 
   const handleStartRecording = () => {
-    // TODO: Navigate to recording page
-    alert('Recording feature coming soon!');
+    router.push(`/lesson/${lessonId}/record`);
   };
 
   const toggleAudio = (sceneNumber: number) => {
@@ -240,9 +239,9 @@ export default function LessonPage() {
               onClick={handleStartRecording}
               variant="primary"
               size="xl"
-              className="font-bold shadow-2xl"
+              className="font-bold shadow-2xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white cursor-pointer"
             >
-              <Play className="inline mr-3" size={28} />
+              <Play className="inline mr-3" size={28} fill="white" />
               Start Acting! 🎬
             </Button>
             <p className="mt-4 text-gray-600 text-lg">
