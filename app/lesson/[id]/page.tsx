@@ -1,14 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Play, ArrowLeft, Clock, Film, Sparkles } from 'lucide-react';
+import { Play, Pause, ArrowLeft, Clock, Film, Sparkles, Volume2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { getUser } from '@/lib/storage';
 import { getLessonById } from '@/lib/lessons';
-import { getGeneratedScript, hasGeneratedScript, removeAudioTags } from '@/lib/generated-scripts';
+import { getGeneratedScript, hasGeneratedScript, removeAudioTags, getAudioPath } from '@/lib/generated-scripts';
 
 export default function LessonPage() {
   const params = useParams();
@@ -17,6 +17,8 @@ export default function LessonPage() {
   
   const [lesson, setLesson] = useState(getLessonById(lessonId));
   const [script, setScript] = useState(getGeneratedScript(lessonId));
+  const [playingScene, setPlayingScene] = useState<number | null>(null);
+  const audioRefs = useRef<{ [key: number]: HTMLAudioElement | null }>({});
 
   useEffect(() => {
     // Check if user is logged in
@@ -45,6 +47,35 @@ export default function LessonPage() {
     // TODO: Navigate to recording page
     alert('Recording feature coming soon!');
   };
+
+  const toggleAudio = (sceneNumber: number) => {
+    const audio = audioRefs.current[sceneNumber];
+    if (!audio) return;
+
+    if (playingScene === sceneNumber) {
+      audio.pause();
+      setPlayingScene(null);
+    } else {
+      // Pause any currently playing audio
+      Object.values(audioRefs.current).forEach(a => a?.pause());
+      audio.currentTime = 0; // Reset to start
+      audio.play();
+      setPlayingScene(sceneNumber);
+    }
+  };
+
+  useEffect(() => {
+    // Handle audio ended event
+    Object.entries(audioRefs.current).forEach(([sceneNum, audio]) => {
+      if (audio) {
+        audio.onended = () => {
+          if (playingScene === parseInt(sceneNum)) {
+            setPlayingScene(null);
+          }
+        };
+      }
+    });
+  }, [playingScene]);
 
   // Check if script is available
   const scriptAvailable = hasGeneratedScript(lessonId);
@@ -158,11 +189,36 @@ export default function LessonPage() {
                         </span>
                       </div>
 
-                      {/* Script Text */}
-                      <div className="bg-gray-50 rounded-xl p-4 border-2 border-gray-100">
-                        <p className="text-gray-700 leading-relaxed text-lg">
-                          {removeAudioTags(scene.script)}
-                        </p>
+                      {/* Script Text with Audio Button */}
+                      <div className="flex items-start gap-4">
+                        <div className="flex-grow bg-gray-50 rounded-xl p-4 border-2 border-gray-100">
+                          <p className="text-gray-700 leading-relaxed text-lg">
+                            {removeAudioTags(scene.script)}
+                          </p>
+                        </div>
+
+                        {/* Audio Player Button */}
+                        <div className="flex flex-col items-center gap-2 flex-shrink-0">
+                          <button
+                            onClick={() => toggleAudio(scene.sceneNumber)}
+                            className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center hover:scale-105 transition-transform shadow-lg"
+                          >
+                            {playingScene === scene.sceneNumber ? (
+                              <Pause className="text-white" size={32} fill="currentColor" />
+                            ) : (
+                              <Play className="text-white ml-1" size={32} fill="currentColor" />
+                            )}
+                          </button>
+                          <span className="text-sm font-semibold text-gray-600">Preview</span>
+                          {/* Hidden audio element */}
+                          <audio
+                            ref={(el) => {
+                              audioRefs.current[scene.sceneNumber] = el;
+                            }}
+                            src={getAudioPath(lessonId, scene.sceneNumber)}
+                            preload="metadata"
+                          />
+                        </div>
                       </div>
 
                       {/* Audio Tags Info - removed since we're hiding tags */}

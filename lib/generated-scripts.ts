@@ -140,3 +140,18 @@ export function removeAudioTags(script: string): string {
   return script.replace(/\[.*?\]/g, '').replace(/\s+/g, ' ').trim();
 }
 
+// Helper function to get audio file path for a scene
+export function getAudioPath(lessonId: string, sceneNumber: number): string {
+  return `/audio/${lessonId}/scene-${sceneNumber}.mp3`;
+}
+
+// Helper function to check if audio file exists (client-side)
+export async function checkAudioExists(lessonId: string, sceneNumber: number): Promise<boolean> {
+  try {
+    const response = await fetch(getAudioPath(lessonId, sceneNumber), { method: 'HEAD' });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
